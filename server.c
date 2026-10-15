@@ -25,6 +25,20 @@ int send(int socket, const void *buffer, size_t len){
 	return 0
 }
 
+// Helper function that byte received over TCP socket
+int recv(int socket void *buffer, size_t len){
+	size_t total = 0;
+	char *ptr = buffer
+        while(total < len){
+                ssize_t received = recv(socket, ptr+total, len-total, 0);
+                if(sent <= 0){
+                        return -1; // return a error for unexpected events
+                }
+                total+=received;
+        }
+        return 0
+}
+
 int main(void){
 	printf("Server configuring...\n");
 	return 0;
