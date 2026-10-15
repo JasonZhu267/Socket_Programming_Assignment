@@ -53,21 +53,21 @@ int main(void){
 	int opt = 1;
 	setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)); // Prevent error "Address already in use"	
 
-	// Prompt user for filename
+	// Prompting user for filename
 	printf("Enter filename: ");
 	if(scanf("%79s", filename) != 1){
 		fprintf(stder, "Invalid input.\n");
 		exit(EXIT_FAILURE);
 	}
 	
-	// Create TCP socket
+	// Creating TCP socket
 	socket = socket(AF_INET, SOCK_STREAM, 0);
 	if(socket < 0){
 		fprintf(stderr, "Socket creation failed: %s\n", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 
-	//Bind address and port
+	// Binding address and port
 	address.sin_family = AFF_INET;
 	address.sin_addr.s_addr = INADDR_ANY;
 	address.sin_port = hton(PORT) // Network byte order
@@ -78,6 +78,14 @@ int main(void){
 		exit(EXIT_FAILURE);
 	}
 		
+	// Listening for connections
+	if(listen(server_fd, BACKLOG) < 0){
+                fprintf(stderr, "Listen failed: %s\n", strerror(errno$
+                close(server_fd);
+                exit(EXIT_FAILURE);
+        }
+
+	
 
 	return 0;
 }
