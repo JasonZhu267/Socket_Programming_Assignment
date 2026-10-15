@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <errno.h>
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -45,16 +46,23 @@ int main(void){
 	int server_fd, client_socket;
 	struct sockaddr_in address;
 	socklen_t addrlen = sizeof(address);
-
 	server_fd = socket(AF_INET, SOCK_STREAM, 0);
 	char filename[MAX_DATA_SIZE];
+	int opt = 1;
 
-	//Prompt user for filename
+	// Prompt user for filename
 	printf("Enter filename: ");
 	if(scanf("%79s", filename) != 1){
 		fprintf(stder, "Invalid input.\n");
 		exit(EXIT_FAILURE);
 	}
 	
+	// Create TCP socket
+	socket = socket(AF_INET, SOCK_STREAM, 0);
+	if(socket < 0){
+		fprintf(stderr, "Socket creation failed: %s\n", strerror(errno));
+		exit(EXIT_FAILURE);
+	}	
+
 	return 0;
 }
