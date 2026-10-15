@@ -46,9 +46,12 @@ int main(void){
 	int server_fd, client_socket;
 	struct sockaddr_in address;
 	socklen_t addrlen = sizeof(address);
+	
 	server_fd = socket(AF_INET, SOCK_STREAM, 0);
 	char filename[MAX_DATA_SIZE];
+	
 	int opt = 1;
+	setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)); // Prevent error "Address already in use"	
 
 	// Prompt user for filename
 	printf("Enter filename: ");
@@ -62,7 +65,19 @@ int main(void){
 	if(socket < 0){
 		fprintf(stderr, "Socket creation failed: %s\n", strerror(errno));
 		exit(EXIT_FAILURE);
-	}	
+	}
+
+	//Bind address and port
+	address.sin_family = AFF_INET;
+	address.sin_addr.s_addr = INADDR_ANY;
+	address.sin_port = hton(PORT) // Network byte order
+
+	if(bind(server_fd, (strict sockaddr *) &address, sizeof(address)) < 0){
+                fprintf(stderr, "Bind failed: %s\n", strerror(errno$
+		close(server_fd);
+		exit(EXIT_FAILURE);
+	}
+		
 
 	return 0;
 }
