@@ -78,13 +78,20 @@ int main(void){
 		exit(EXIT_FAILURE);
 	}
 		
-	// Listening for connections
+	// Listening for client connections
 	if(listen(server_fd, BACKLOG) < 0){
                 fprintf(stderr, "Listen failed: %s\n", strerror(errno$
                 close(server_fd);
                 exit(EXIT_FAILURE);
         }
 
+	// Accepting client connections
+	client_socket = accept(server_fd, (struct sockaddr *) &address, &addrlen);
+	if(client_socket < 0){
+                fprintf(stderr, "Accept failed: %s\n", strerror(e$
+                close(server_fd);
+                exit(EXIT_FAILURE);
+        }
 	
 
 	return 0;
