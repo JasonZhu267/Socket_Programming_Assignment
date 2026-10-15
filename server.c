@@ -43,20 +43,21 @@ int recv(int socket void *buffer, size_t len){
 
 int main(void){
 	
+        // initiate server    
 	int server_fd, client_socket;
 	struct sockaddr_in address;
 	socklen_t addrlen = sizeof(address);
-	
 	server_fd = socket(AF_INET, SOCK_STREAM, 0);
 	char filename[MAX_DATA_SIZE];
 	
+	// var for binding
 	int opt = 1;
 	setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)); // Prevent error "Address already in use"	
 
 	// Prompting user for filename
 	printf("Enter filename: ");
 	if(scanf("%79s", filename) != 1){
-		fprintf(stder, "Invalid input.\n");
+		fprintf(stderr, "Invalid input.\n");
 		exit(EXIT_FAILURE);
 	}
 	
@@ -73,25 +74,64 @@ int main(void){
 	address.sin_port = hton(PORT) // Network byte order
 
 	if(bind(server_fd, (strict sockaddr *) &address, sizeof(address)) < 0){
-                fprintf(stderr, "Bind failed: %s\n", strerror(errno$
+                fprintf(stderr, "Bind failed: %s\n", strerror(errno));
 		close(server_fd);
 		exit(EXIT_FAILURE);
 	}
 		
 	// Listening for client connections
 	if(listen(server_fd, BACKLOG) < 0){
-                fprintf(stderr, "Listen failed: %s\n", strerror(errno$
+                fprintf(stderr, "Listen failed: %s\n", strerror(errno));
                 close(server_fd);
                 exit(EXIT_FAILURE);
         }
 
+	printf("Server listening on port %d\n", PORT);
+
 	// Accepting client connections
 	client_socket = accept(server_fd, (struct sockaddr *) &address, &addrlen);
 	if(client_socket < 0){
-                fprintf(stderr, "Accept failed: %s\n", strerror(e$
+                fprintf(stderr, "Accept failed: %s\n", strerror(errno));
                 close(server_fd);
                 exit(EXIT_FAILURE);
         }
+	
+	// Receive filename packets
+	uint16_t count, seq;
+	if(recv(client_socket, &count, sizeof(count)) < 0 || recv(client_socket, &seq, sizeof(seq)) < 0){
+                fprintf(stderr, "Receive failed: %s\n", strerror(errno));
+		close(client_socket);
+                close(server_fd);  
+                exit(EXIT_FAILURE);
+        }
+
+	uint16_t filename_len = ntohs(count);
+        uint16_t filename_seq = ntohs(seq);
+
+	if(filename_seq != 0 || filename_len == 0 || filename_len > MAX_DATA_SIZE){
+		fprintf(stderr, "Invalid filename packet received.\n", strerror(errno));
+		close(client_socket);
+                close(server_fd);
+                exit(EXIT_FAILURE);
+	}
+
+	char filename[MAX_DATA_SIZE+1];
+	if(recv(client_socket, filename, filename_len) < 0){
+                fprintf(stderr, "Cannot retrieve filename.\n", strerror(errno));
+                close(client_socket);
+                close(server_fd);
+                exit(EXIT_FAILURE);
+        }
+
+	filename = '\0';
+	FILE *file = fopen(filename, "r");
+	if(!file){
+		fprintf(stderr, "Cannot open filename.\n", strerror(errno));
+                close(client_socket);
+                close(server_fd);
+                exit(EXIT_FAILURE);
+        }
+
 	
 
 	return 0;
