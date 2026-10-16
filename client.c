@@ -13,9 +13,9 @@
 
 // Helper function that loop until all bytes is sent over the TCP socket.
 // Return 0 when successful transmit or -1 for error.
-int send(int socket, const void *buffer, size_t len){
+int send_all(int socket, const void *buffer, size_t len){
 	size_t total = 0;
-	const char *ptr = buffer
+	const char *ptr = buffer;
 	while(total < len){
 		ssize_t sent = send(socket, ptr+total, len-total, 0);
 		if(sent <= 0){
@@ -28,12 +28,12 @@ int send(int socket, const void *buffer, size_t len){
 
 // Helper function that byte received over TCP socket
 // Return 0 when successful receive or -1 for error.
-int recv(int socket void *buffer, size_t len){
+int rcv(int socket, void *buffer, size_t len){
 	size_t total = 0;
-	char *ptr = buffer
+	char *ptr = buffer;
         while(total < len){
                 ssize_t received = recv(socket, ptr+total, len-total, 0);
-                if(sent <= 0){
+                if(received <= 0){
                         return -1; // return a error for unexpected events
                 }
                 total+=received;
@@ -46,7 +46,7 @@ int main(void){
         // Initiate server    
 	int client_socket;
 	struct sockaddr_in address;
-	char filename[MAX_DATA_SIZE];
+	char filename[MAX_DATA_SIZE+1];
 	
 	// Prompting user for filename
 	printf("Enter filename: ");
@@ -77,7 +77,26 @@ int main(void){
                 fprintf(stderr, "Server failed to connect: %s\n", strerror(errno));
                 close(socket);
                 exit(EXIT_FAILURE);
-	}		
+	}
+
+	// Send Filename Packet
+	uint16_t f_count = htons((uint16_t)filename_len);
+   	uint16_t f_seq = htons(0);
+
+	if(send_all(socket, &f_seq, sizeof(f_seq)) < 0 || send_all(socket, &f_count, sizeof(f_count)) < 0 || send_all(socket, filename, filename_len) < 0){
+		fprintf(stderr, "Failed to send file packets: %s\n", strerror(errno));
+                close(socket);
+                exit(EXIT_FAILURE);
+        }
+
+	FILE *file = fopen("file.txt", "w");
+	if(!file){
+        	fprintf(stderr, "Failed to open file.txt for writing: %s\n", strerror(errno));
+        	close(sock);
+        	exit(EXIT_FAILURE);
+    	}
+
+	//
 
 	return 0;
 }
