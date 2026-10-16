@@ -53,13 +53,6 @@ int main(void){
 	// var for binding
 	int opt = 1;
 	setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)); // Prevent error "Address already in use"	
-
-	// Prompting user for filename
-	printf("Enter filename: ");
-	if(scanf("%79s", filename) != 1){
-		fprintf(stderr, "Invalid input: %s\n", strerror(errno));
-		exit(EXIT_FAILURE);
-	}
 	
 	// Creating TCP socket
 	if(server_fd < 0){
