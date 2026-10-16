@@ -43,7 +43,7 @@ int recv(int socket void *buffer, size_t len){
 
 int main(void){
 	
-        // initiate server    
+        // Initiate server    
 	int client_socket;
 	struct sockaddr_in address;
 	char filename[MAX_DATA_SIZE];
@@ -57,7 +57,22 @@ int main(void){
 
 	size_t filename_len = strlen(filename);
 
+	// Create TCP socket
+	socket = socket(AF_INET, sock_stream, 0);
+	if(socket < 0){
+		fprintf(stderr, "Socket creation failed: %s\n", strerror(errno));
+		exit(EXIT_FAILURE);
+	}
 	
+	serv_addr.sin_family = AF_INET;
+	serv_addr.sin_port = htons(PORT);
+	if(inet_pton(AF_INET, SERVER_IP, &serv_addr.sin_addr) <= 0 ){
+		fprintf(stderr, "Invalid address or address no supported: %s\n", strerror(errno));
+                close(socket);
+		exit(EXIT_FAILURE);
+	}
+
+		
 
 	return 0;
 }
