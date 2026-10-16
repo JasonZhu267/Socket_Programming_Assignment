@@ -13,32 +13,32 @@
 
 // Helper function that loop until all bytes is sent over the TCP socket.
 // Return 0 when successful transmit or -1 for error.
-int send(int socket, const void *buffer, size_t len){
+int send_all(int socket, const void *buffer, size_t len){
 	size_t total = 0;
-	const char *ptr = buffer
+	const char *ptr = buffer;
 	while(total < len){
 		ssize_t sent = send(socket, ptr+total, len-total, 0);
 		if(sent <= 0){
-			return -1; // return a error for unexpected events
+			return -1; // return an error for unexpected events
 		} 
                 total+=sent;
 	}
-	return 0
+	return 0;
 }
 
 // Helper function that byte received over TCP socket
 // Return 0 when successful receive or -1 for error.
-int recv(int socket void *buffer, size_t len){
+int rcv(int socket, void *buffer, size_t len){
 	size_t total = 0;
-	char *ptr = buffer
+	char *ptr = buffer;
         while(total < len){
                 ssize_t received = recv(socket, ptr+total, len-total, 0);
-                if(sent <= 0){
+                if(received <= 0){
                         return -1; // return a error for unexpected events
                 }
                 total+=received;
         }
-        return 0
+        return 0;
 }
 
 int main(void){
@@ -48,7 +48,7 @@ int main(void){
 	struct sockaddr_in address;
 	socklen_t addrlen = sizeof(address);
 	server_fd = socket(AF_INET, SOCK_STREAM, 0);
-	char filename[MAX_DATA_SIZE];
+	char filename[MAX_DATA_SIZE+1];
 	
 	// var for binding
 	int opt = 1;
@@ -62,18 +62,17 @@ int main(void){
 	}
 	
 	// Creating TCP socket
-	socket = socket(AF_INET, SOCK_STREAM, 0);
-	if(socket < 0){
+	if(server_fd < 0){
 		fprintf(stderr, "Socket creation failed: %s\n", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 
 	// Binding address and port
-	address.sin_family = AFF_INET;
+	address.sin_family = AF_INET;
 	address.sin_addr.s_addr = INADDR_ANY;
-	address.sin_port = hton(PORT) // Network byte order
+	address.sin_port = htons(PORT); // Network byte order
 
-	if(bind(server_fd, (strict sockaddr *) &address, sizeof(address)) < 0){
+	if(bind(server_fd, (struct sockaddr *) &address, sizeof(address)) < 0){
                 fprintf(stderr, "Bind failed: %s\n", strerror(errno));
 		close(server_fd);
 		exit(EXIT_FAILURE);
@@ -98,7 +97,7 @@ int main(void){
 	
 	// Receive filename packets
 	uint16_t count, seq;
-	if(recv(client_socket, &count, sizeof(count)) < 0 || recv(client_socket, &seq, sizeof(seq)) < 0){
+	if(rcv(client_socket, &count, sizeof(count)) < 0 || rcv(client_socket, &seq, sizeof(seq)) < 0){
                 fprintf(stderr, "Receive failed: %s\n", strerror(errno));
 		close(client_socket);
                 close(server_fd);  
@@ -115,15 +114,14 @@ int main(void){
                 exit(EXIT_FAILURE);
 	}
 
-	char filename[MAX_DATA_SIZE+1];
-	if(recv(client_socket, filename, filename_len) < 0){
+	if(rcv(client_socket, filename, filename_len) < 0){
                 fprintf(stderr, "Cannot retrieve filename: %s\n", strerror(errno));
                 close(client_socket);
                 close(server_fd);
                 exit(EXIT_FAILURE);
         }
 
-	filename = '\0';
+	filename[filename_len]  = '\0';
 	FILE *file = fopen(filename, "r");
 	if(!file){
 		fprintf(stderr, "Cannot open filename: %s\n", strerror(errno));
@@ -133,51 +131,50 @@ int main(void){
         }
 
 	// Read file and transmit data packets
-	uint16_t seq = 1;
+	uint16_t seq_num = 1;
         unsigned long data_packets = 0;
         unsigned long data_bytes = 0;
         char line_buffer[MAX_DATA_SIZE];
 
-	while(fgets(line_buffer, sizeof(linebuffer), file) != NULL){
-		size_t line_len = strlen(life_buffer);
+	while(fgets(line_buffer, sizeof(line_buffer), file) != NULL){
+		size_t line_len = strlen(line_buffer);
 		uint16_t count = htons((uint16_t)line_len);
-		uint16_t seq = htons(seq);
+		uint16_t seq = htons(seq_num);
 
-		if(send(client_socket, &count, sizeof(count)) < 0 || send(client_socket, &seq, sizeof(seq)) < 0){
-){
+		if(send_all(client_socket, &count, sizeof(count)) < 0 || send_all(client_socket, &seq, sizeof(seq)) < 0){
                 	fprintf(stderr, "Failure sending packet header: %s\n", strerror(errno));
                 	close(client_socket);
                 	close(server_fd);
                 	exit(EXIT_FAILURE);
         	}
 
-		if(send(client_socket, line_budffer, line_len) < 0){
+		if(send_all(client_socket, line_buffer, line_len) < 0){
                         fprintf(stderr, "Failure sending packet info: %s\n", strerror(errno));
                         close(client_socket);
                         close(server_fd);
                         exit(EXIT_FAILURE);
                 }
 		
-		printf(Packet %u transmitted with %u bytes\n", seq, (uint16_t)line_len);
+		printf("Packet %u transmitted with %u bytes\n", seq, (uint16_t)line_len);
 		data_packets++;
 		data_bytes+=line_len;
-		seq++;
+		seq_num++;
 	}
 
 	fclose(file);
 
 	// End-of-Transmission Packet
 	uint16_t eot_count = htons(0);
-	uint16_t eot_seq = hton(seq);
+	uint16_t eot_seq = htons(seq_num);
 	
-	if(send(client_socket, &eot_count, sizeof(eot_count)) < 0 || send(client_socket, &eot_seq, sizeof(eot_seq)) < 0){
+	if(send_all(client_socket, &eot_count, sizeof(eot_count)) < 0 || send_all(client_socket, &eot_seq, sizeof(eot_seq)) < 0){
                 fprintf(stderr, "Failure sending EOT packet: %s\n", strerror(errno));
                 close(client_socket);
                 close(server_fd);
                 exit(EXIT_FAILURE);
         }
 
-	printf("End of Transmission Packet with sequence number %u transmitted with 0 data bytes\n", seq);
+	printf("End of Transmission Packet with sequence number %u transmitted with 0 data bytes\n", seq_num);
 
         
         printf("Number of packets transmitted: %lu\n", data_packets);

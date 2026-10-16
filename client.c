@@ -72,7 +72,12 @@ int main(void){
 		exit(EXIT_FAILURE);
 	}
 
-		
+	// Establish coonection with server
+	if(connect(socket, (strict sockaddr *)&serv_addr, sizeof(serv_addr)) < 0){
+                fprintf(stderr, "Server failed to connect: %s\n", strerror(errno));
+                close(socket);
+                exit(EXIT_FAILURE);
+	}		
 
 	return 0;
 }
