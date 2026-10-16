@@ -96,7 +96,47 @@ int main(void){
         	exit(EXIT_FAILURE);
     	}
 
-	//
+	// Receive stream packets
+	unsigned long packets_received = 0;
+    	unsigned long bytes_received = 0;
 
+	while(1){
+		uint16_t p_count, seq_num;
+		if(rcv(client_socket, &p_count, sizeof(p_count)) < 0 || rcv(client_socket, &seq_num, sizeof(seq_num)) < 0){
+			fprintf(stderr, "Failed to receive packets: %s\n", strerror(errno));
+                	fclose(file);
+			close(client_socket);
+                	exit(EXIT_FAILURE);
+		}
+		
+		uint16_t count = ntohs(p_count);
+        	uint16_t seq = ntohs(seq_num);
+
+		// Base Case
+		if (count == 0) {
+            		printf("End of Transmission Packet with sequence number %u received with 0 data bytes\n", seq);
+            		break;
+        	}
+
+		char data_buffer[MAX_DATA_SIZE];
+		if(rcv(client_socket, data_buffer, count) < 0){
+			fprintf(stderr, "Failed to receive packet data: %s\n", strerror(errno)); 
+                        fclose(file);
+			close(client_socket);
+                        exit(EXIT_FAILURE);
+		}
+		
+		fwrite(data_buffer, 1, count, file);
+		printf("Packet %u received with %u data bytes.\n", seq, count);
+		packets_received++;
+		bytes_received+=count;
+
+	}
+		
+	fclose(file);
+	
+	printf("Number of data packets received: %lu\n", packets_received);
+    	printf("Total number of data bytes received: %lu\n", bytes_received);
+	
 	return 0;
 }
