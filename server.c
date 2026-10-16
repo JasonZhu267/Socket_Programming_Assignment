@@ -57,7 +57,7 @@ int main(void){
 	// Prompting user for filename
 	printf("Enter filename: ");
 	if(scanf("%79s", filename) != 1){
-		fprintf(stderr, "Invalid input.\n");
+		fprintf(stderr, "Invalid input: %s\n", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 	
@@ -109,7 +109,7 @@ int main(void){
         uint16_t filename_seq = ntohs(seq);
 
 	if(filename_seq != 0 || filename_len == 0 || filename_len > MAX_DATA_SIZE){
-		fprintf(stderr, "Invalid filename packet received.\n", strerror(errno));
+		fprintf(stderr, "Invalid filename packet received: %s\n", strerror(errno));
 		close(client_socket);
                 close(server_fd);
                 exit(EXIT_FAILURE);
@@ -117,7 +117,7 @@ int main(void){
 
 	char filename[MAX_DATA_SIZE+1];
 	if(recv(client_socket, filename, filename_len) < 0){
-                fprintf(stderr, "Cannot retrieve filename.\n", strerror(errno));
+                fprintf(stderr, "Cannot retrieve filename: %s\n", strerror(errno));
                 close(client_socket);
                 close(server_fd);
                 exit(EXIT_FAILURE);
@@ -126,12 +126,47 @@ int main(void){
 	filename = '\0';
 	FILE *file = fopen(filename, "r");
 	if(!file){
-		fprintf(stderr, "Cannot open filename.\n", strerror(errno));
+		fprintf(stderr, "Cannot open filename: %s\n", strerror(errno));
                 close(client_socket);
                 close(server_fd);
                 exit(EXIT_FAILURE);
         }
 
+	// Read file and transmit data packets
+	uint16_t seq = 1;
+        unsigned long data_packets = 0;
+        unsigned long data_bytes = 0;
+        char line_buffer[MAX_DATA_SIZE];
+
+	while(fgets(line_buffer, sizeof(linebuffer), file) != NULL){
+		size_t line_len = strlen(life_buffer);
+		uint16_t count = htons((uint16_t)line_len);
+		uint16_t seq = htons(seq);
+
+		if(send(client_socket, &count, sizeof(count)) < 0 || send(client_socket, &seq, sizeof(seq)) < 0){
+){
+                	fprintf(stderr, "Failure sending packet header: %s\n", strerror(errno));
+                	close(client_socket);
+                	close(server_fd);
+                	exit(EXIT_FAILURE);
+        	}
+
+		if(send(client_socket, line_budffer, line_len) < 0){
+                        fprintf(stderr, "Failure sending packet info: %s\n", strerror(errno));
+                        close(client_socket);
+                        close(server_fd);
+                        exit(EXIT_FAILURE);
+                }
+		
+		printf(Packet %u transmitted with %u bytes\n", seq, (uint16_t)line_len);
+		data_packets++;
+		data_bytes+=line_len;
+		seq++;
+	}
+
+	fclose(file);
+
+	// End-of-Transmission Packet
 	
 
 	return 0;
