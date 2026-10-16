@@ -101,7 +101,8 @@ int main(void){
         uint16_t filename_seq = ntohs(seq);
 
 	if(filename_seq != 0 || filename_len == 0 || filename_len > MAX_DATA_SIZE){
-		fprintf(stderr, "Invalid filename packet received: %s\n", strerror(errno));
+//		fprintf(stderr, "Invalid filename packet received: %s\n", strerror(errno));
+		fprintf(stderr, "Rejected! seq=%u (expected 0), len=%u\n", filename_seq, filename_len);
 		close(client_socket);
                 close(server_fd);
                 exit(EXIT_FAILURE);
@@ -148,7 +149,7 @@ int main(void){
                         exit(EXIT_FAILURE);
                 }
 		
-		printf("Packet %u transmitted with %u bytes\n", seq, (uint16_t)line_len);
+		printf("Packet %u transmitted with %u data bytes.\n", seq_num, (uint16_t)line_len);
 		data_packets++;
 		data_bytes+=line_len;
 		seq_num++;
@@ -170,8 +171,8 @@ int main(void){
 	printf("End of Transmission Packet with sequence number %u transmitted with 0 data bytes\n", seq_num);
 
         
-        printf("Number of packets transmitted: %lu\n", data_packets);
-        printf("Total number of bytes transmitted: %lu\n", data_bytes);
+        printf("Number of data packets transmitted: %lu\n", data_packets);
+        printf("Total number of data bytes transmitted: %lu\n", data_bytes);
 
         // Close sockets
         close(client_socket);

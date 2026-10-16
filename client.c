@@ -83,15 +83,15 @@ int main(void){
 	uint16_t f_count = htons((uint16_t)filename_len);
    	uint16_t f_seq = htons(0);
 
-	if(send_all(client_socket, &f_seq, sizeof(f_seq)) < 0 || send_all(client_socket, &f_count, sizeof(f_count)) < 0 || send_all(client_socket, filename, filename_len) < 0){
+	if(send_all(client_socket, &f_count, sizeof(f_count)) < 0 || send_all(client_socket, &f_seq, sizeof(f_seq)) < 0 || send_all(client_socket, filename, filename_len) < 0){
 		fprintf(stderr, "Failed to send file packets: %s\n", strerror(errno));
                 close(client_socket);
                 exit(EXIT_FAILURE);
         }
 
-	FILE *file = fopen("file.txt", "w");
-	if(!file){
-        	fprintf(stderr, "Failed to open file.txt for writing: %s\n", strerror(errno));
+	FILE *outfile = fopen("out.txt", "w");
+	if(!outfile){
+        	fprintf(stderr, "Failed to open out.txt for writing: %s\n", strerror(errno));
         	close(client_socket);
         	exit(EXIT_FAILURE);
     	}
@@ -104,7 +104,7 @@ int main(void){
 		uint16_t p_count, seq_num;
 		if(rcv(client_socket, &p_count, sizeof(p_count)) < 0 || rcv(client_socket, &seq_num, sizeof(seq_num)) < 0){
 			fprintf(stderr, "Failed to receive packets: %s\n", strerror(errno));
-                	fclose(file);
+                	fclose(outfile);
 			close(client_socket);
                 	exit(EXIT_FAILURE);
 		}
@@ -121,19 +121,19 @@ int main(void){
 		char data_buffer[MAX_DATA_SIZE];
 		if(rcv(client_socket, data_buffer, count) < 0){
 			fprintf(stderr, "Failed to receive packet data: %s\n", strerror(errno)); 
-                        fclose(file);
+                        fclose(outfile);
 			close(client_socket);
                         exit(EXIT_FAILURE);
 		}
 		
-		fwrite(data_buffer, 1, count, file);
+		fwrite(data_buffer, 1, count, outfile);
 		printf("Packet %u received with %u data bytes.\n", seq, count);
 		packets_received++;
 		bytes_received+=count;
 
 	}
 		
-	fclose(file);
+	fclose(outfile);
 	
 	printf("Number of data packets received: %lu\n", packets_received);
     	printf("Total number of data bytes received: %lu\n", bytes_received);

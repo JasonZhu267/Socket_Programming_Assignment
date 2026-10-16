@@ -1,2 +1,0 @@
-Hello, this is line one of the socket programming assignment.
-This is line two, testing TCP stream transmission.
