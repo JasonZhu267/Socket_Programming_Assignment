@@ -8,7 +8,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #define PORT 8080
-#define BACKLOG 5
+#define SERVER_IP "127.0.0.1"
 #define MAX_DATA_SIZE 80
 
 // Helper function that loop until all bytes is sent over the TCP socket.
@@ -23,7 +23,7 @@ int send_all(int socket, const void *buffer, size_t len){
 		} 
                 total+=sent;
 	}
-	return 0
+	return 0;
 }
 
 // Helper function that byte received over TCP socket
@@ -38,14 +38,14 @@ int rcv(int socket, void *buffer, size_t len){
                 }
                 total+=received;
         }
-        return 0
+        return 0;
 }
 
 int main(void){
 	
         // Initiate server    
 	int client_socket;
-	struct sockaddr_in address;
+	struct sockaddr_in serv_addr;
 	char filename[MAX_DATA_SIZE+1];
 	
 	// Prompting user for filename
@@ -58,8 +58,8 @@ int main(void){
 	size_t filename_len = strlen(filename);
 
 	// Create TCP socket
-	socket = socket(AF_INET, sock_stream, 0);
-	if(socket < 0){
+	client_socket = socket(AF_INET, SOCK_STREAM, 0);
+	if(client_socket < 0){
 		fprintf(stderr, "Socket creation failed: %s\n", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
@@ -68,14 +68,14 @@ int main(void){
 	serv_addr.sin_port = htons(PORT);
 	if(inet_pton(AF_INET, SERVER_IP, &serv_addr.sin_addr) <= 0 ){
 		fprintf(stderr, "Invalid address or address no supported: %s\n", strerror(errno));
-                close(socket);
+                close(client_socket);
 		exit(EXIT_FAILURE);
 	}
 
 	// Establish coonection with server
-	if(connect(socket, (strict sockaddr *)&serv_addr, sizeof(serv_addr)) < 0){
+	if(connect(client_socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0){
                 fprintf(stderr, "Server failed to connect: %s\n", strerror(errno));
-                close(socket);
+                close(client_socket);
                 exit(EXIT_FAILURE);
 	}
 
@@ -83,16 +83,16 @@ int main(void){
 	uint16_t f_count = htons((uint16_t)filename_len);
    	uint16_t f_seq = htons(0);
 
-	if(send_all(socket, &f_seq, sizeof(f_seq)) < 0 || send_all(socket, &f_count, sizeof(f_count)) < 0 || send_all(socket, filename, filename_len) < 0){
+	if(send_all(client_socket, &f_seq, sizeof(f_seq)) < 0 || send_all(client_socket, &f_count, sizeof(f_count)) < 0 || send_all(client_socket, filename, filename_len) < 0){
 		fprintf(stderr, "Failed to send file packets: %s\n", strerror(errno));
-                close(socket);
+                close(client_socket);
                 exit(EXIT_FAILURE);
         }
 
 	FILE *file = fopen("file.txt", "w");
 	if(!file){
         	fprintf(stderr, "Failed to open file.txt for writing: %s\n", strerror(errno));
-        	close(sock);
+        	close(client_socket);
         	exit(EXIT_FAILURE);
     	}
 
