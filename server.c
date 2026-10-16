@@ -167,7 +167,25 @@ int main(void){
 	fclose(file);
 
 	// End-of-Transmission Packet
+	uint16_t eot_count = htons(0);
+	uint16_t eot_seq = hton(seq);
 	
+	if(send(client_socket, &eot_count, sizeof(eot_count)) < 0 || send(client_socket, &eot_seq, sizeof(eot_seq)) < 0){
+                fprintf(stderr, "Failure sending EOT packet: %s\n", strerror(errno));
+                close(client_socket);
+                close(server_fd);
+                exit(EXIT_FAILURE);
+        }
+
+	printf("End of Transmission Packet with sequence number %u transmitted with 0 data bytes\n", seq);
+
+        
+        printf("Number of packets transmitted: %lu\n", data_packets);
+        printf("Total number of bytes transmitted: %lu\n", data_bytes);
+
+        // Close sockets
+        close(client_socket);
+        close(server_fd);
 
 	return 0;
 }
